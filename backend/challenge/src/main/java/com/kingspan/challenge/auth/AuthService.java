@@ -3,12 +3,15 @@ package com.kingspan.challenge.auth;
 import com.kingspan.challenge.auth.dto.AuthresponseDTO;
 import com.kingspan.challenge.auth.dto.LoginRequestDTO;
 import com.kingspan.challenge.auth.dto.RegisterRequestDTO;
+import com.kingspan.challenge.auth.dto.UserResponseDTO;
 import com.kingspan.challenge.common.security.JwtService;
 import com.kingspan.challenge.users.User;
 import com.kingspan.challenge.users.UserRepository;
+import com.kingspan.challenge.users.UserRole;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -29,6 +32,10 @@ public class AuthService {
             throw new RuntimeException("Email já cadastrado");
         }
 
+        if (registerRequest.role() == UserRole.APROVADOR && registerRequest.approverLevel() == null) {
+            throw new RuntimeException("Usuário aprovador deve ter nível de aprovação informado");
+        }
+
         var entity = User.builder()
                 .name(registerRequest.name())
                 .email(registerRequest.email())
@@ -44,9 +51,19 @@ public class AuthService {
         return new AuthresponseDTO(token, entity.getName(), entity.getEmail(), entity.getRole());
     }
 
-    public Object getCurrentUser() {
-        //TODO
-        return null;
+    public UserResponseDTO getCurrentUser() {
+        User currentUser = (User) SecurityContextHolder.getContext()
+                .getAuthentication()
+                .getPrincipal();
+
+
+        return new UserResponseDTO(
+                currentUser.getId(),
+                currentUser.getName(),
+                currentUser.getEmail(),
+                currentUser.getRole().name(),
+                currentUser.getApproverLevel() != null ? currentUser.getApproverLevel().name() : null
+        );
     }
 
     public AuthresponseDTO login(LoginRequestDTO request){

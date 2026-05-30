@@ -28,6 +28,7 @@ public class JwtAuthFilter extends OncePerRequestFilter {
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain filterChain) throws ServletException, IOException {
         var token = this.recoverToken(request);
         if (token != null) {
+            System.out.println("Token recebido: "+token.toString());
             var email = tokenService.validateToken(token);
             Optional<User> userOpt = userRepository.findByEmail(email);
 
