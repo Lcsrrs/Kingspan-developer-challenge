@@ -1,49 +1,47 @@
 package com.kingspan.challenge.auth;
 
-import com.kingspan.challenge.auth.dto.Authresponse;
-import com.kingspan.challenge.auth.dto.LoginRequest;
-import com.kingspan.challenge.auth.dto.RegisterRequest;
+import com.kingspan.challenge.auth.dto.AuthresponseDTO;
+import com.kingspan.challenge.auth.dto.LoginRequestDTO;
+import com.kingspan.challenge.auth.dto.RegisterRequestDTO;
+import com.kingspan.challenge.common.security.JwtService;
 import com.kingspan.challenge.users.User;
 import com.kingspan.challenge.users.UserRepository;
+import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.core.userdetails.UsernameNotFoundException;
+import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
-import java.time.LocalDateTime;
-import java.util.UUID;
-
 @Service
-public class AuthService implements UserDetailsService {
-
-    private UserRepository userRepository;
-//    private final PasswordEncoder passwordEncoder;
-//    private final JwtService jwtService;
-
+@RequiredArgsConstructor
+public class AuthService {
 
     @Autowired
-    UserRepository repository;
-    @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        return repository.findByEmail(username);
-    }
+    private UserRepository userRepository;
+    private final PasswordEncoder passwordEncoder;
+    private final AuthenticationManager authenticationManager;
+    private final JwtService jwtService;
 
-    public UUID createUser(RegisterRequest registerRequest){
 
-        var entity = new User(UUID.randomUUID(),
-                registerRequest.getName(),
-                registerRequest.getEmail(),
-                registerRequest.getPassword(),
-                registerRequest.getRole(),
-                registerRequest.getApproverLevel(),
-                LocalDateTime.now()
-                );
+    public AuthresponseDTO register(RegisterRequestDTO registerRequest){
 
-        var userSaved = userRepository.save(entity);
+        if (userRepository.existsByEmail(registerRequest.email())) {
+            throw new RuntimeException("Email já cadastrado");
+        }
 
-        return userSaved.getId();
+        var entity = User.builder()
+                .name(registerRequest.name())
+                .email(registerRequest.email())
+                .passwordHash(passwordEncoder.encode(registerRequest.password()))
+                .role(registerRequest.role())
+                .approverLevel(registerRequest.approverLevel())
+                .build();
+
+        userRepository.save(entity);
+
+        var token = jwtService.generateToken(entity);
+
+        return new AuthresponseDTO(token, entity.getName(), entity.getEmail(), entity.getRole());
     }
 
     public Object getCurrentUser() {
@@ -51,8 +49,17 @@ public class AuthService implements UserDetailsService {
         return null;
     }
 
-    public Authresponse login(LoginRequest request){
-        //TODO
-        return null;
+    public AuthresponseDTO login(LoginRequestDTO request){
+
+        var user = userRepository.findByEmail(request.email())
+                .orElseThrow(() -> new RuntimeException("Usuário ou senha incorretos"));
+
+        if (!passwordEncoder.matches(request.password(), user.getPasswordHash()))
+            throw new RuntimeException("Usuário ou senha incorretos");
+
+        var token = jwtService.generateToken(user);
+
+        return new AuthresponseDTO(token, user.getName(), user.getEmail(), user.getRole());
     }
+
 }
