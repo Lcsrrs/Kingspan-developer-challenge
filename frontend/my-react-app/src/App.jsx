@@ -4,7 +4,7 @@ import Login from './pages/Login';
 import PrivateRoute from './components/PrivateRoute'
 import Dashboard from './pages/Dashboard';
 import RequestDetail from './pages/RequestDetails';
-import NewRequest from './pages/Newrequest';
+import NewRequest from './pages/NewRequest';
 
 export default function App() {
   return (
