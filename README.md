@@ -1,5 +1,7 @@
 # Programa de Recrutamento - Kingspan
 
+
+
 ## Teste Técnico — Desenvolvedor(a) Júnior Fullstack
 
 > **Stack:** Java ou Node.js + React ou Angular
@@ -297,3 +299,5 @@ developer-challenge/          ← seu fork
 ```
 
 Não altere arquivos fora das suas próprias pastas de trabalho.
+
+Vídeo de apresentação do desafio: https://youtu.be/6HjC8HcAO3Y
